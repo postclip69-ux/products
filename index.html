@@ -96,120 +96,114 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script>
-        // ===================================================================================
-        // PENTING: KONFIGURASI SUPABASE ANDA DI SINI
-        // Ganti dengan URL dan Kunci Anon dari proyek Supabase Anda.
-        // Anda bisa menemukannya di: Project Settings > API
-        // ===================================================================================
-        const SUPABASE_URL = 'https://bsexdtzpasauonjpbbrh.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzZXhkdHpwYXNhdW9uanBiYnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0Mjk2MzgsImV4cCI6MjA3NTAwNTYzOH0.E184tfMBjmue6RaVFoKJASH0HvewPEWN7DuxaDaqrzQ';
+<script>
+    // ===================================================================================
+    // PENTING: KONFIGURASI SUPABASE ANDA DI SINI
+    // Ganti dengan URL dan Kunci Anon dari proyek Supabase Anda.
+    // Anda bisa menemukannya di: Project Settings > API
+    // ===================================================================================
+    const SUPABASE_URL = 'https://bsexdtzpasauonjpbbrh.supabase.co'; // <-- PASTIKAN INI SUDAH DIISI
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzZXhkdHpwYXNhdW9uanBiYnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0Mjk2MzgsImV4cCI6MjA3NTAwNTYzOH0.E184tfMBjmue6RaVFoKJASH0HvewPEWN7DuxaDaqrzQ'; // <-- PASTIKAN INI SUDAH DIISI
 
-        // Ganti 'products' dengan nama tabel Anda di Supabase
-        const NAMA_TABEL = 'products'; 
-        
-        // Pastikan nama kolom di tabel Supabase Anda sesuai
-        const KOLOM_KODE_PRODUK = 'kode_produk';
-        const KOLOM_SISA_STOK = 'sisa_stok';
-        // ===================================================================================
+    // Ganti 'products' dengan nama tabel Anda di Supabase
+    const NAMA_TABEL = 'products'; 
+    
+    // Pastikan nama kolom di tabel Supabase Anda sesuai
+    const KOLOM_KODE_PRODUK = 'kode_produk';
+    const KOLOM_SISA_STOK = 'sisa_stok';
+    // ===================================================================================
 
-        // Inisialisasi klien Supabase
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // Elemen HTML untuk menampilkan data dan status
-        const tableBody = document.getElementById('stock-table-body');
-        const statusMessage = document.getElementById('status-message');
-        
-        // Daftar kode produk yang ingin ditampilkan
-        const productCodes = [
-            'BPAL1', 'BPAL3', 'BPAL5', 'BPAL7', 'BPAL9', 'BPAL11', 'BPAL13', 'BPAL15',
-            'BPAL17', 'BPAL19', 'XLA14', 'XLA32', 'XLA39', 'XLA51', 'XLA65', 'XLA89'
-        ];
+    // Inisialisasi klien Supabase
+    // PERBAIKAN: Menggunakan nama variabel 'supabaseClient' untuk menghindari konflik
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // Elemen HTML untuk menampilkan data dan status
+    const tableBody = document.getElementById('stock-table-body');
+    const statusMessage = document.getElementById('status-message');
+    
+    // Daftar kode produk yang ingin ditampilkan
+    const productCodes = [
+        'BPAL1', 'BPAL3', 'BPAL5', 'BPAL7', 'BPAL9', 'BPAL11', 'BPAL13', 'BPAL15',
+        'BPAL17', 'BPAL19', 'XLA14', 'XLA32', 'XLA39', 'XLA51', 'XLA65', 'XLA89'
+    ];
 
-        /**
-         * Fungsi untuk mengambil data stok dari Supabase dan menampilkannya di tabel.
-         */
-        async function fetchStockData() {
-            try {
-                // Mengambil data dari Supabase dimana 'kode_produk' ada di dalam array productCodes
-                const { data, error } = await supabase
-                    .from(NAMA_TABEL)
-                    .select(`${KOLOM_KODE_PRODUK}, ${KOLOM_SISA_STOK}`)
-                    .in(KOLOM_KODE_PRODUK, productCodes);
+    /**
+     * Fungsi untuk mengambil data stok dari Supabase dan menampilkannya di tabel.
+     */
+    async function fetchStockData() {
+        try {
+            // PERBAIKAN: Menggunakan 'supabaseClient'
+            const { data, error } = await supabaseClient
+                .from(NAMA_TABEL)
+                .select(`${KOLOM_KODE_PRODUK}, ${KOLOM_SISA_STOK}`)
+                .in(KOLOM_KODE_PRODUK, productCodes);
 
-                if (error) {
-                    throw error; // Lemparkan error jika ada masalah saat mengambil data
-                }
-
-                // Mengosongkan isi tabel sebelum diisi data baru
-                tableBody.innerHTML = '';
-
-                if (data && data.length > 0) {
-                    // Membuat pemetaan dari data yang diterima untuk pencarian cepat
-                    const stockMap = new Map(data.map(item => [item[KOLOM_KODE_PRODUK], item[KOLOM_SISA_STOK]]));
-                    
-                    // Iterasi melalui daftar kode produk yang sudah ditentukan
-                    productCodes.forEach(code => {
-                        const newRow = document.createElement('tr');
-                        const stock = stockMap.get(code); // Ambil stok dari map, jika tidak ada akan undefined
-                        
-                        newRow.innerHTML = `
-                            <td>${code}</td>
-                            <td>${stock !== undefined ? stock : 'N/A'}</td>
-                        `;
-                        tableBody.appendChild(newRow);
-                    });
-                    statusMessage.textContent = 'Data berhasil diperbarui.';
-                } else {
-                    // Jika tidak ada data yang cocok, tampilkan semua kode dengan stok N/A
-                    productCodes.forEach(code => {
-                        const newRow = document.createElement('tr');
-                        newRow.innerHTML = `
-                            <td>${code}</td>
-                            <td>N/A</td>
-                        `;
-                        tableBody.appendChild(newRow);
-                    });
-                    statusMessage.textContent = 'Tidak ada data stok ditemukan di database. Pastikan data sudah diisi.';
-                }
-                
-            } catch (error) {
-                console.error('Error mengambil data stok:', error.message);
-                statusMessage.textContent = `Error: ${error.message}. Cek koneksi atau konfigurasi Supabase Anda.`;
+            if (error) {
+                throw error;
             }
-        }
 
-        /**
-         * Fungsi untuk mendengarkan perubahan data secara real-time pada tabel.
-         */
-        function subscribeToStockChanges() {
-            const channel = supabase.channel(`realtime:${NAMA_TABEL}`)
-                .on(
-                    'postgres_changes', 
-                    { event: '*', schema: 'public', table: NAMA_TABEL },
-                    (payload) => {
-                        console.log('Perubahan terdeteksi:', payload);
-                        // Jika ada perubahan, panggil fungsi untuk mengambil ulang semua data
-                        fetchStockData(); 
-                    }
-                )
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('Berhasil terhubung ke fitur real-time Supabase!');
-                    } else if (status === 'CHANNEL_ERROR') {
-                        console.error('Koneksi real-time gagal.');
-                    }
+            tableBody.innerHTML = '';
+
+            if (data && data.length > 0) {
+                const stockMap = new Map(data.map(item => [item[KOLOM_KODE_PRODUK], item[KOLOM_SISA_STOK]]));
+                
+                productCodes.forEach(code => {
+                    const newRow = document.createElement('tr');
+                    const stock = stockMap.get(code);
+                    
+                    newRow.innerHTML = `
+                        <td>${code}</td>
+                        <td>${stock !== undefined ? stock : 'N/A'}</td>
+                    `;
+                    tableBody.appendChild(newRow);
                 });
+                statusMessage.textContent = 'Data berhasil diperbarui.';
+            } else {
+                productCodes.forEach(code => {
+                    const newRow = document.createElement('tr');
+                    newRow.innerHTML = `
+                        <td>${code}</td>
+                        <td>N/A</td>
+                    `;
+                    tableBody.appendChild(newRow);
+                });
+                statusMessage.textContent = 'Tidak ada data stok ditemukan. Pastikan data sudah diisi dan RLS (Row Level Security) tidak memblokir.';
+            }
+            
+        } catch (error) {
+            console.error('Error mengambil data stok:', error.message);
+            statusMessage.textContent = `Error: ${error.message}. Cek koneksi atau konfigurasi Supabase Anda.`;
         }
+    }
 
-        // --- Eksekusi Awal ---
-        // 1. Panggil fungsi untuk mengambil data saat halaman pertama kali dimuat
-        fetchStockData();
-        
-        // 2. Mulai mendengarkan perubahan data secara real-time
-        subscribeToStockChanges();
+    /**
+     * Fungsi untuk mendengarkan perubahan data secara real-time pada tabel.
+     */
+    function subscribeToStockChanges() {
+        // PERBAIKAN: Menggunakan 'supabaseClient'
+        const channel = supabaseClient.channel(`realtime:${NAMA_TABEL}`)
+            .on(
+                'postgres_changes', 
+                { event: '*', schema: 'public', table: NAMA_TABEL },
+                (payload) => {
+                    console.log('Perubahan terdeteksi:', payload);
+                    fetchStockData(); 
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Berhasil terhubung ke fitur real-time Supabase!');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('Koneksi real-time gagal.');
+                }
+            });
+    }
 
-    </script>
+    // --- Eksekusi Awal ---
+    fetchStockData();
+    subscribeToStockChanges();
+
+</script>
 
 </body>
 </html>
