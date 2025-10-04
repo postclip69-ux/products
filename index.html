@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Stok Real-Time</title>
+    <style>
+        /* CSS untuk tampilan minimalis */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        h1 {
+            color: #1a202c;
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        thead {
+            background-color: #edf2f7;
+        }
+
+        th {
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        tbody tr:hover {
+            background-color: #f9fafb;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        /* Styling untuk status pesan */
+        #status-message {
+            margin-top: 20px;
+            color: #718096;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>📊 Daftar Stok Produk (Real-Time)</h1>
+        
+        <table id="stock-table">
+            <thead>
+                <tr>
+                    <th>KODE PRODUK</th>
+                    <th>SISA STOK</th>
+                </tr>
+            </thead>
+            <tbody id="stock-table-body">
+                </tbody>
+        </table>
+
+        <p id="status-message">Memuat data dari Supabase...</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ===================================================================================
+        // PENTING: KONFIGURASI SUPABASE ANDA DI SINI
+        // Ganti dengan URL dan Kunci Anon dari proyek Supabase Anda.
+        // Anda bisa menemukannya di: Project Settings > API
+        // ===================================================================================
+        const SUPABASE_URL = 'https://bsexdtzpasauonjpbbrh.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzZXhkdHpwYXNhdW9uanBiYnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk0Mjk2MzgsImV4cCI6MjA3NTAwNTYzOH0.E184tfMBjmue6RaVFoKJASH0HvewPEWN7DuxaDaqrzQ';
+
+        // Ganti 'products' dengan nama tabel Anda di Supabase
+        const NAMA_TABEL = 'products'; 
+        
+        // Pastikan nama kolom di tabel Supabase Anda sesuai
+        const KOLOM_KODE_PRODUK = 'kode_produk';
+        const KOLOM_SISA_STOK = 'sisa_stok';
+        // ===================================================================================
+
+        // Inisialisasi klien Supabase
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Elemen HTML untuk menampilkan data dan status
+        const tableBody = document.getElementById('stock-table-body');
+        const statusMessage = document.getElementById('status-message');
+        
+        // Daftar kode produk yang ingin ditampilkan
+        const productCodes = [
+            'BPAL1', 'BPAL3', 'BPAL5', 'BPAL7', 'BPAL9', 'BPAL11', 'BPAL13', 'BPAL15',
+            'BPAL17', 'BPAL19', 'XLA14', 'XLA32', 'XLA39', 'XLA51', 'XLA65', 'XLA89'
+        ];
+
+        /**
+         * Fungsi untuk mengambil data stok dari Supabase dan menampilkannya di tabel.
+         */
+        async function fetchStockData() {
+            try {
+                // Mengambil data dari Supabase dimana 'kode_produk' ada di dalam array productCodes
+                const { data, error } = await supabase
+                    .from(NAMA_TABEL)
+                    .select(`${KOLOM_KODE_PRODUK}, ${KOLOM_SISA_STOK}`)
+                    .in(KOLOM_KODE_PRODUK, productCodes);
+
+                if (error) {
+                    throw error; // Lemparkan error jika ada masalah saat mengambil data
+                }
+
+                // Mengosongkan isi tabel sebelum diisi data baru
+                tableBody.innerHTML = '';
+
+                if (data && data.length > 0) {
+                    // Membuat pemetaan dari data yang diterima untuk pencarian cepat
+                    const stockMap = new Map(data.map(item => [item[KOLOM_KODE_PRODUK], item[KOLOM_SISA_STOK]]));
+                    
+                    // Iterasi melalui daftar kode produk yang sudah ditentukan
+                    productCodes.forEach(code => {
+                        const newRow = document.createElement('tr');
+                        const stock = stockMap.get(code); // Ambil stok dari map, jika tidak ada akan undefined
+                        
+                        newRow.innerHTML = `
+                            <td>${code}</td>
+                            <td>${stock !== undefined ? stock : 'N/A'}</td>
+                        `;
+                        tableBody.appendChild(newRow);
+                    });
+                    statusMessage.textContent = 'Data berhasil diperbarui.';
+                } else {
+                    // Jika tidak ada data yang cocok, tampilkan semua kode dengan stok N/A
+                    productCodes.forEach(code => {
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td>${code}</td>
+                            <td>N/A</td>
+                        `;
+                        tableBody.appendChild(newRow);
+                    });
+                    statusMessage.textContent = 'Tidak ada data stok ditemukan di database. Pastikan data sudah diisi.';
+                }
+                
+            } catch (error) {
+                console.error('Error mengambil data stok:', error.message);
+                statusMessage.textContent = `Error: ${error.message}. Cek koneksi atau konfigurasi Supabase Anda.`;
+            }
+        }
+
+        /**
+         * Fungsi untuk mendengarkan perubahan data secara real-time pada tabel.
+         */
+        function subscribeToStockChanges() {
+            const channel = supabase.channel(`realtime:${NAMA_TABEL}`)
+                .on(
+                    'postgres_changes', 
+                    { event: '*', schema: 'public', table: NAMA_TABEL },
+                    (payload) => {
+                        console.log('Perubahan terdeteksi:', payload);
+                        // Jika ada perubahan, panggil fungsi untuk mengambil ulang semua data
+                        fetchStockData(); 
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('Berhasil terhubung ke fitur real-time Supabase!');
+                    } else if (status === 'CHANNEL_ERROR') {
+                        console.error('Koneksi real-time gagal.');
+                    }
+                });
+        }
+
+        // --- Eksekusi Awal ---
+        // 1. Panggil fungsi untuk mengambil data saat halaman pertama kali dimuat
+        fetchStockData();
+        
+        // 2. Mulai mendengarkan perubahan data secara real-time
+        subscribeToStockChanges();
+
+    </script>
+
+</body>
+</html>
